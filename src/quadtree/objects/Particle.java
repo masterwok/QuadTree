@@ -8,7 +8,7 @@ import javax.media.opengl.GL2;
  */
 public class Particle {
 
-    private float radius = 2;
+    private float radius = 6;
     private final int SEGMENTS = 10;
     private float x;
     private float y;
