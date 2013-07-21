@@ -1,8 +1,8 @@
 package quadtree;
 
-import java.awt.Point;
 import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
+import quadtree.objects.Particle;
 
 /**
  *
@@ -34,8 +34,8 @@ public class BoundingBox {
         gl.glPopMatrix();
     }
 
-    public boolean contains(Point p) {
-        return (p.x >= getX() && p.x <= getX() + getWidth()) && (p.y >= getY() - getHeight() && p.y <= getY());
+    public boolean contains(Particle p) {
+        return (p.getX() >= x && p.getX() <= x + width) && (p.getY() >= y - height && p.getY() <= y);
     }
 
     @Override

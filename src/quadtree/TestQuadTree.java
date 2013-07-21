@@ -3,7 +3,6 @@ package quadtree;
 import com.jogamp.opengl.util.Animator;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Point;
 import java.util.ArrayList;
 import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
@@ -12,6 +11,7 @@ import javax.media.opengl.GLEventListener;
 import javax.media.opengl.awt.GLCanvas;
 import javax.media.opengl.glu.GLU;
 import javax.swing.JFrame;
+import quadtree.objects.Particle;
 
 /**
  *
@@ -20,10 +20,11 @@ import javax.swing.JFrame;
 public class TestQuadTree implements GLEventListener {
 
     private GLCanvas canvas;
-    private GLU glu = new GLU();
+    private GLU glu;
     QuadTree quadTree;
-    ArrayList<Point> points = new ArrayList<>();
-    private final int MAX_LEVEL = 4;
+    ArrayList<Particle> particles = new ArrayList<>();
+    private final int MAX_LEVEL = 6;
+    private final int MAX_CAPACITY = 4;
 
     @SuppressWarnings("LeakingThisInConstructor")
     public TestQuadTree() {
@@ -32,7 +33,7 @@ public class TestQuadTree implements GLEventListener {
         Animator animator;
 
         // Create the initial quad tree node
-        quadTree = new QuadTree(600, 600, MAX_LEVEL);
+        quadTree = new QuadTree(600, 600, MAX_LEVEL, MAX_CAPACITY);
 
         // Setup the canvas
         canvas = new GLCanvas();
@@ -57,19 +58,23 @@ public class TestQuadTree implements GLEventListener {
 
     public void generateNewPoints() {
 
-        quadTree = new QuadTree(600, 600, MAX_LEVEL);
+        quadTree = new QuadTree(600, 600, MAX_LEVEL, MAX_CAPACITY);
 
         // Generate random points
-        points.clear();
+        particles.clear();
         int min = 0, max = 600;
+        int minVelocity = -3, maxVelocity = 3;
         int x, y;
-        Point p;
-        for (int i = 0; i < 500; i++) {
+        int velocityX, velocityY;
+        Particle p;
+        for (int i = 0; i < 100; i++) {
             x = min + (int) (Math.random() * ((max - min) + 1));
             y = min + (int) (Math.random() * ((max - min) + 1));
-            p = new Point(x, y);
+            velocityX = minVelocity + (int) (Math.random() * ((maxVelocity - minVelocity) + 1));
+            velocityY = minVelocity + (int) (Math.random() * ((maxVelocity - minVelocity) + 1));
+            p = new Particle(x, y, velocityX, velocityY, 600, 600);
             quadTree.insert(p);
-            points.add(p);
+            particles.add(p);
         }
     }
 
@@ -80,36 +85,21 @@ public class TestQuadTree implements GLEventListener {
         gl.glLoadIdentity();
         glu.gluLookAt(0, 0, 1, 0, 0, 0, 0f, 1f, 0f);
 
-
-        // Draw the points in this quad
-        gl.glPushMatrix();
-        gl.glColor3f(1, 0, 1);
-        gl.glBegin(GL.GL_POINTS);
-        for (Point p : points)
-            gl.glVertex3d(p.getX(), p.getY(), 0.5f);
-        gl.glEnd();
-        gl.glPopMatrix();
-
         // Draw everything here
+        quadTree = new QuadTree(600, 600, MAX_LEVEL, MAX_CAPACITY);
+
+        for (Particle p : particles) {
+            quadTree.insert(p);
+            p.move();
+            p.draw(gl);
+        }
+
         quadTree.draw(gl);
 
         // Check for errors
         int error = gl.glGetError();
         if (error != GL.GL_NO_ERROR)
             System.out.println("OpenGL Error: " + error);
-    }
-
-    private void drawWindowBorder(GL2 gl) {
-        gl.glPushMatrix();
-        gl.glColor3f(1f, 0f, 0f);
-        gl.glBegin(GL.GL_LINE_LOOP);
-        gl.glVertex3f(0f, 0f, 0f);
-        gl.glVertex3f(0f, 600, 0f);
-        gl.glVertex3f(600, 600, 0f);
-        gl.glVertex3f(600, 0, 0f);
-        gl.glEnd();
-        gl.glColor3f(0f, 1f, 0f);
-        gl.glPopMatrix();
     }
 
     @Override
@@ -124,10 +114,8 @@ public class TestQuadTree implements GLEventListener {
         gl.glEnable(GL2.GL_DEPTH_TEST);
         gl.glDepthFunc(GL2.GL_LEQUAL);
         gl.glHint(GL2.GL_PERSPECTIVE_CORRECTION_HINT, GL2.GL_NICEST);
-    }
+        glu = new GLU();
 
-    @Override
-    public void dispose(GLAutoDrawable drawable) {
     }
 
     @Override
@@ -141,6 +129,10 @@ public class TestQuadTree implements GLEventListener {
         gl.glMatrixMode(GL2.GL_MODELVIEW);
         gl.glLoadIdentity();
         glu.gluLookAt(0, 0, 1, 0, 0, 0, 0f, 1f, 0f);
+    }
+
+    @Override
+    public void dispose(GLAutoDrawable drawable) {
     }
 
     public static void main(String[] args) {

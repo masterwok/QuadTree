@@ -1,8 +1,8 @@
 package quadtree;
 
-import java.awt.Point;
 import java.util.ArrayList;
 import javax.media.opengl.GL2;
+import quadtree.objects.Particle;
 
 /**
  *
@@ -10,9 +10,9 @@ import javax.media.opengl.GL2;
  */
 public class QuadTree {
 
-    private static final int CAPACITY = 6;       // Max objects in node
+    private int capacity;
     private BoundingBox boundary;
-    private ArrayList<Point> points = new ArrayList<>(); // Points in this quad tree
+    private ArrayList<Particle> particles = new ArrayList<>(); // Points in this quad tree
     private int pointIndex = 0;
     private int level;
     private int maxLevel;
@@ -26,17 +26,19 @@ public class QuadTree {
         NORTH_EAST, NORTH_WEST, SOUTH_WEST, SOUTH_EAST
     }
 
-    public QuadTree(int width, int height, int maxLevel) {
+    public QuadTree(int width, int height, int maxLevel, int capacity) {
         this.boundary = new BoundingBox(0, height, width, height);
         this.level = 0;
         this.maxLevel = maxLevel;
+        this.capacity = capacity;
     }
 
-    private QuadTree(BoundingBox parent, Region region, int level, int maxLevel) {
+    private QuadTree(BoundingBox parent, Region region, int level, int maxLevel, int capacity) {
         float x = 0, y = 0;
 
         this.level = level + 1;
         this.maxLevel = maxLevel;
+        this.capacity = capacity;
 
         switch (region) {
             case NORTH_EAST:
@@ -76,15 +78,15 @@ public class QuadTree {
         southEast.draw(gl);
     }
 
-    public boolean insert(Point p) {
+    public boolean insert(Particle p) {
 
         // Ignore points that are not contained in this bounding box
         if (!boundary.contains(p))
             return false;
 
         // If still below capacity add it to this quadtree
-        if (points.size() < CAPACITY || level == maxLevel) {
-            points.add(p);
+        if (particles.size() < capacity || level == maxLevel) {
+            particles.add(p);
             return true;
         }
 
@@ -107,13 +109,13 @@ public class QuadTree {
 
     public void subdivide() {
         // Create children of this quad tree
-        northEast = new QuadTree(boundary, Region.NORTH_EAST, level, maxLevel);
-        northWest = new QuadTree(boundary, Region.NORTH_WEST, level, maxLevel);
-        southWest = new QuadTree(boundary, Region.SOUTH_WEST, level, maxLevel);
-        southEast = new QuadTree(boundary, Region.SOUTH_EAST, level, maxLevel);
+        northEast = new QuadTree(boundary, Region.NORTH_EAST, level, maxLevel, capacity);
+        northWest = new QuadTree(boundary, Region.NORTH_WEST, level, maxLevel, capacity);
+        southWest = new QuadTree(boundary, Region.SOUTH_WEST, level, maxLevel, capacity);
+        southEast = new QuadTree(boundary, Region.SOUTH_EAST, level, maxLevel, capacity);
 
         // Put the points that exist in this node into the children
-        for (Point p : points) {
+        for (Particle p : particles) {
             if (northEast.insert(p))
                 continue;
             if (northWest.insert(p))
@@ -126,6 +128,6 @@ public class QuadTree {
 
         // Since we put the points into the children this node is said to not
         // contain any points
-        points.clear();
+        particles.clear();
     }
 }
