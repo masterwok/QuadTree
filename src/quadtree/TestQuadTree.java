@@ -1,5 +1,6 @@
 package quadtree;
 
+import com.jogamp.newt.event.MouseListener;
 import com.jogamp.opengl.util.Animator;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -23,7 +24,7 @@ public class TestQuadTree implements GLEventListener {
     private GLU glu;
     QuadTree quadTree;
     ArrayList<Particle> particles = new ArrayList<>();
-    private final int MAX_LEVEL = 6;
+    private final int MAX_LEVEL = 5;
     private final int MAX_CAPACITY = 4;
 
     @SuppressWarnings("LeakingThisInConstructor")
@@ -49,11 +50,19 @@ public class TestQuadTree implements GLEventListener {
         frame.requestFocus();
         canvas.requestFocusInWindow();
 
+        // Add keyboard and mouse listener
         canvas.addKeyListener(new KeyboardControls(this));
+        canvas.addMouseListener(new MouseControls(this, canvas.getHeight()));
 
         // Start the animator
         animator = new Animator(canvas);
         animator.start();
+    }
+
+    public void insertPointAtPosition(int x, int y) {
+        Particle p = new Particle(x, y, 0, 0, 600, 600);
+        quadTree.insert(p);
+        particles.add(p);
     }
 
     public void generateNewPoints() {
@@ -67,7 +76,7 @@ public class TestQuadTree implements GLEventListener {
         int x, y;
         int velocityX, velocityY;
         Particle p;
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 50; i++) {
             x = min + (int) (Math.random() * ((max - min) + 1));
             y = min + (int) (Math.random() * ((max - min) + 1));
             velocityX = minVelocity + (int) (Math.random() * ((maxVelocity - minVelocity) + 1));
@@ -86,15 +95,17 @@ public class TestQuadTree implements GLEventListener {
         glu.gluLookAt(0, 0, 1, 0, 0, 0, 0f, 1f, 0f);
 
         // Draw everything here
-        quadTree = new QuadTree(600, 600, MAX_LEVEL, MAX_CAPACITY);
 
+        quadTree.clear();
         for (Particle p : particles) {
-            quadTree.insert(p);
-            p.move();
-            p.draw(gl);
+            quadTree.insert(p);             // Insert the particle into the tree
+            p.draw(gl);                     // Draw the particle
+            p.move();                       // Move the particle
         }
 
         quadTree.draw(gl);
+
+        //System.out.println("Number of quads = " + quadTree.getQuads().size());
 
         // Check for errors
         int error = gl.glGetError();

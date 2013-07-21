@@ -35,7 +35,7 @@ public class BoundingBox {
     }
 
     public boolean contains(Particle p) {
-        return (p.getX() - p.getRadius() >= x && p.getX() + p.getRadius() <= x + width) && (p.getY() - p.getRadius() >= y - height && p.getY() + p.getRadius() <= y);
+        return (p.getX() >= x && p.getX() <= x + width) && (p.getY() >= y - height && p.getY() <= y);
     }
 
     @Override

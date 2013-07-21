@@ -9,10 +9,10 @@ import java.awt.event.KeyListener;
  */
 public class KeyboardControls implements KeyListener {
 
-    private TestQuadTree tester;
+    private TestQuadTree controller;
 
-    public KeyboardControls(TestQuadTree tester) {
-        this.tester = tester;
+    public KeyboardControls(TestQuadTree controller) {
+        this.controller = controller;
     }
 
     @Override
@@ -25,9 +25,14 @@ public class KeyboardControls implements KeyListener {
 
     @Override
     public void keyReleased(java.awt.event.KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-            //System.out.println("Generating new points");
-            tester.generateNewPoints();
+        switch (e.getKeyCode()) {
+            case (KeyEvent.VK_SPACE):
+                controller.generateNewPoints();
+                break;
+            case (KeyEvent.VK_C):
+                controller.quadTree.clear();
+                controller.particles.clear();
+                break;
         }
     }
 }

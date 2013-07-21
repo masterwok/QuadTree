@@ -13,13 +13,13 @@ public class QuadTree {
     private int capacity;
     private BoundingBox boundary;
     private ArrayList<Particle> particles = new ArrayList<>(); // Points in this quad tree
-    private int pointIndex = 0;
     private int level;
     private int maxLevel;
     private QuadTree northWest;
     private QuadTree northEast;
     private QuadTree southWest;
     private QuadTree southEast;
+    private Region region;
 
     public static enum Region {
 
@@ -36,6 +36,7 @@ public class QuadTree {
     private QuadTree(BoundingBox parent, Region region, int level, int maxLevel, int capacity) {
         float x = 0, y = 0;
 
+        this.region = region;
         this.level = level + 1;
         this.maxLevel = maxLevel;
         this.capacity = capacity;
@@ -62,6 +63,38 @@ public class QuadTree {
         this.boundary = new BoundingBox(x, y, parent.getWidth() / 2, parent.getHeight() / 2);
     }
 
+    public void clear() {
+        particles.clear();
+        northWest = northEast = southWest = southEast = null;
+    }
+
+    public void checkForCollisions() {
+    }
+
+    public ArrayList<Particle> getParticles() {
+        return particles;
+    }
+
+    public ArrayList<QuadTree> getQuads() {
+        ArrayList<QuadTree> quads = new ArrayList<>();
+
+        //System.out.println("[Region " + region + "] Number of particles = " + particles.size());
+
+        if (particles.size() > 0)
+            quads.add(this);
+
+        // Return if we reached a leaf node
+        if (northEast == null)
+            return quads;
+
+        quads.addAll(northEast.getQuads());
+        quads.addAll(northWest.getQuads());
+        quads.addAll(southWest.getQuads());
+        quads.addAll(southEast.getQuads());
+
+        return quads;
+    }
+
     public void draw(GL2 gl) {
 
         // Draw the bounding box
@@ -76,45 +109,48 @@ public class QuadTree {
         northWest.draw(gl);
         southWest.draw(gl);
         southEast.draw(gl);
+
+        if (region == null) {
+            System.out.println("Number of particles at root = " + particles.size());
+        }
     }
 
     public boolean insert(Particle p) {
 
-        // Ignore points that are not contained in this bounding box
+        // Cannot be added if outside of boundary
         if (!boundary.contains(p))
             return false;
 
-        // If still below capacity add it to this quadtree
-        if (particles.size() < capacity || level == maxLevel) {
+        // If below capacity and a leaf node add to node
+        if (particles.size() < capacity && northEast == null) {
             particles.add(p);
             return true;
         }
 
-        // Above capacity so subdivide and add it to accepting child node
-        if (northEast == null)
+        // If at capacity and a leaf node subdivide
+        if (particles.size() == capacity && northEast == null)
             subdivide();
 
-        if (northEast.insert(p) == true)
+        if (northEast.insert(p))
             return true;
-        if (northWest.insert(p) == true)
+        if (northWest.insert(p))
             return true;
-        if (southWest.insert(p) == true)
+        if (southWest.insert(p))
             return true;
-        if (southEast.insert(p) == true)
+        if (southEast.insert(p))
             return true;
 
-        // Something went wrong if we got this far
         return false;
     }
 
     public void subdivide() {
+
         // Create children of this quad tree
         northEast = new QuadTree(boundary, Region.NORTH_EAST, level, maxLevel, capacity);
         northWest = new QuadTree(boundary, Region.NORTH_WEST, level, maxLevel, capacity);
         southWest = new QuadTree(boundary, Region.SOUTH_WEST, level, maxLevel, capacity);
         southEast = new QuadTree(boundary, Region.SOUTH_EAST, level, maxLevel, capacity);
 
-        // Put the points that exist in this node into the children
         for (Particle p : particles) {
             if (northEast.insert(p))
                 continue;
@@ -126,8 +162,6 @@ public class QuadTree {
                 continue;
         }
 
-        // Since we put the points into the children this node is said to not
-        // contain any points
         particles.clear();
     }
 }
