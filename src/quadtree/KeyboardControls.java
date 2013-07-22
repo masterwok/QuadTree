@@ -27,11 +27,10 @@ public class KeyboardControls implements KeyListener {
     public void keyReleased(java.awt.event.KeyEvent e) {
         switch (e.getKeyCode()) {
             case (KeyEvent.VK_SPACE):
-                controller.generateNewPoints();
+                controller.generateNewPoints(25);
                 break;
             case (KeyEvent.VK_C):
-                controller.quadTree.clear();
-                controller.particles.clear();
+                controller.reset();
                 break;
         }
     }

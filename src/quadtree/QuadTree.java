@@ -1,5 +1,6 @@
 package quadtree;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import javax.media.opengl.GL2;
 import quadtree.objects.Particle;
@@ -69,6 +70,32 @@ public class QuadTree {
     }
 
     public void checkForCollisions() {
+        Particle p1, p2;
+        boolean hadCollision = false;
+
+        // Only run check if there is more than one particle in the node
+        if (particles.size() > 1) {
+
+            // Check for collision between each particle
+            for (int i = 0; i < particles.size() - 1; i++) {
+                p1 = particles.get(i);
+                for (int n = i + 1; n < particles.size(); n++) {
+                    p2 = particles.get(n);
+                    p1.handlePossibleCollision(p2);
+                }
+            }
+        }
+
+        // If no children then return
+        if (northEast == null)
+            return;
+
+        // Recursively run same check on the children
+        northEast.checkForCollisions();
+        northWest.checkForCollisions();
+        southWest.checkForCollisions();
+        southEast.checkForCollisions();
+
     }
 
     public ArrayList<Particle> getParticles() {
@@ -110,9 +137,6 @@ public class QuadTree {
         southWest.draw(gl);
         southEast.draw(gl);
 
-        if (region == null) {
-            System.out.println("Number of particles at root = " + particles.size());
-        }
     }
 
     public boolean insert(Particle p) {
@@ -127,19 +151,24 @@ public class QuadTree {
             return true;
         }
 
-        // If at capacity and a leaf node subdivide
-        if (particles.size() == capacity && northEast == null)
-            subdivide();
+        if (level < maxLevel) {
+            // If at capacity and a leaf node subdivide
+            if (particles.size() == capacity && northEast == null)
+                subdivide();
 
-        if (northEast.insert(p))
-            return true;
-        if (northWest.insert(p))
-            return true;
-        if (southWest.insert(p))
-            return true;
-        if (southEast.insert(p))
-            return true;
+            if (northEast.insert(p))
+                return true;
+            if (northWest.insert(p))
+                return true;
+            if (southWest.insert(p))
+                return true;
+            if (southEast.insert(p))
+                return true;
 
+        } else {
+            particles.add(p);
+            return true;
+        }
         return false;
     }
 
@@ -151,6 +180,7 @@ public class QuadTree {
         southWest = new QuadTree(boundary, Region.SOUTH_WEST, level, maxLevel, capacity);
         southEast = new QuadTree(boundary, Region.SOUTH_EAST, level, maxLevel, capacity);
 
+        // Bump the particles down to the children
         for (Particle p : particles) {
             if (northEast.insert(p))
                 continue;
@@ -162,6 +192,7 @@ public class QuadTree {
                 continue;
         }
 
+        // There should be no particles in current node at this point
         particles.clear();
     }
 }

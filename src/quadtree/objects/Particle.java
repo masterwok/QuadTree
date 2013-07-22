@@ -1,5 +1,6 @@
 package quadtree.objects;
 
+import java.awt.Color;
 import javax.media.opengl.GL2;
 
 /**
@@ -8,7 +9,7 @@ import javax.media.opengl.GL2;
  */
 public class Particle {
 
-    private float radius = 6;
+    private float radius = 5;
     private final int SEGMENTS = 10;
     private float x;
     private float y;
@@ -16,6 +17,9 @@ public class Particle {
     private float velocityY;
     private float boundWidth;
     private float boundHeight;
+    public final Color COLLISION_COLOR = Color.YELLOW;
+    public final Color NORMAL_COLOR = new Color(1, 0, 1);
+    private Color currentColor = NORMAL_COLOR;
 
     public Particle(float x, float y, float velocityX, float velocityY, float boundWidth, float boundHeight) {
         this.x = x;
@@ -24,6 +28,19 @@ public class Particle {
         this.velocityY = velocityY;
         this.boundWidth = boundWidth;
         this.boundHeight = boundHeight;
+    }
+
+    public void resetColor() {
+        currentColor = NORMAL_COLOR;
+    }
+
+    public void handlePossibleCollision(Particle p) {
+        double distance = Math.sqrt(Math.pow((x - p.getX()), 2) + Math.pow((y - p.getY()), 2));
+
+        // Collision if distance is less than the sum of the radii
+        if (distance < radius + p.getRadius()) {
+            p.currentColor = currentColor = COLLISION_COLOR;
+        }
     }
 
     public void move() {
@@ -53,7 +70,7 @@ public class Particle {
 
     public void draw(GL2 gl) {
         gl.glPushMatrix();
-        gl.glColor3f(1, 0, 1);
+        gl.glColor3f(currentColor.getRed(), currentColor.getGreen(), currentColor.getBlue());
         gl.glBegin(GL2.GL_TRIANGLE_FAN);
         gl.glVertex2f(x, y);
         for (int n = 0; n <= SEGMENTS; ++n) {
