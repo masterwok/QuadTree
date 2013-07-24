@@ -1,9 +1,8 @@
 package quadtree;
 
-import java.awt.Color;
 import java.util.ArrayList;
+import java.util.List;
 import javax.media.opengl.GL2;
-import quadtree.objects.Particle;
 
 /**
  *
@@ -11,188 +10,102 @@ import quadtree.objects.Particle;
  */
 public class QuadTree {
 
-    private int capacity;
+    private static final int MAX_LEVEL = 2;
+    private static final int MAX_CAPACITY = 1;
     private BoundingBox boundary;
-    private ArrayList<Particle> particles = new ArrayList<>(); // Points in this quad tree
+    public List<BoundingBox> objects;
     private int level;
-    private int maxLevel;
-    private QuadTree northWest;
-    private QuadTree northEast;
-    private QuadTree southWest;
-    private QuadTree southEast;
-    private Region region;
+    private QuadTree NORTH_EAST, NORTH_WEST, SOUTH_WEST, SOUTH_EAST;
 
-    public static enum Region {
-
-        NORTH_EAST, NORTH_WEST, SOUTH_WEST, SOUTH_EAST
-    }
-
-    public QuadTree(int width, int height, int maxLevel, int capacity) {
-        this.boundary = new BoundingBox(0, height, width, height);
-        this.level = 0;
-        this.maxLevel = maxLevel;
-        this.capacity = capacity;
-    }
-
-    private QuadTree(BoundingBox parent, Region region, int level, int maxLevel, int capacity) {
-        float x = 0, y = 0;
-
-        this.region = region;
-        this.level = level + 1;
-        this.maxLevel = maxLevel;
-        this.capacity = capacity;
-
-        switch (region) {
-            case NORTH_EAST:
-                x = parent.getX() + (parent.getWidth() / 2);
-                y = parent.getY();
-                break;
-            case NORTH_WEST:
-                x = parent.getX();
-                y = parent.getY();
-                break;
-            case SOUTH_WEST:
-                x = parent.getX();
-                y = parent.getY() - (parent.getWidth() / 2);
-                break;
-            case SOUTH_EAST:
-                x = parent.getX() + (parent.getWidth() / 2);
-                y = parent.getY() - (parent.getWidth() / 2);
-                break;
-        }
-
-        this.boundary = new BoundingBox(x, y, parent.getWidth() / 2, parent.getHeight() / 2);
-    }
-
-    public void clear() {
-        particles.clear();
-        northWest = northEast = southWest = southEast = null;
-    }
-
-    public void checkForCollisions() {
-        Particle p1, p2;
-        boolean hadCollision = false;
-
-        // Only run check if there is more than one particle in the node
-        if (particles.size() > 1) {
-
-            // Check for collision between each particle
-            for (int i = 0; i < particles.size() - 1; i++) {
-                p1 = particles.get(i);
-                for (int n = i + 1; n < particles.size(); n++) {
-                    p2 = particles.get(n);
-                    p1.handlePossibleCollision(p2);
-                }
-            }
-        }
-
-        // If no children then return
-        if (northEast == null)
-            return;
-
-        // Recursively run same check on the children
-        northEast.checkForCollisions();
-        northWest.checkForCollisions();
-        southWest.checkForCollisions();
-        southEast.checkForCollisions();
-
-    }
-
-    public ArrayList<Particle> getParticles() {
-        return particles;
-    }
-
-    public ArrayList<QuadTree> getQuads() {
-        ArrayList<QuadTree> quads = new ArrayList<>();
-
-        //System.out.println("[Region " + region + "] Number of particles = " + particles.size());
-
-        if (particles.size() > 0)
-            quads.add(this);
-
-        // Return if we reached a leaf node
-        if (northEast == null)
-            return quads;
-
-        quads.addAll(northEast.getQuads());
-        quads.addAll(northWest.getQuads());
-        quads.addAll(southWest.getQuads());
-        quads.addAll(southEast.getQuads());
-
-        return quads;
+    public QuadTree(int level, BoundingBox boundary) {
+        objects = new ArrayList();
+        this.level = level;
+        this.boundary = boundary;
     }
 
     public void draw(GL2 gl) {
-
-        // Draw the bounding box
         boundary.draw(gl);
-
-        // Check to see if there's children
-        if (northEast == null)
-            return;
-
-        // Draw the children recursively
-        northEast.draw(gl);
-        northWest.draw(gl);
-        southWest.draw(gl);
-        southEast.draw(gl);
-
+        if (NORTH_EAST != null) {
+            NORTH_EAST.draw(gl);
+            NORTH_WEST.draw(gl);
+            SOUTH_WEST.draw(gl);
+            SOUTH_EAST.draw(gl);
+        }
     }
 
-    public boolean insert(Particle p) {
+    public boolean insert(BoundingBox b) {
 
-        // Cannot be added if outside of boundary
-        if (!boundary.contains(p))
+        if (!boundary.contains(b.x, b.y, b.width, b.height))
             return false;
 
-        // If below capacity and a leaf node add to node
-        if (particles.size() < capacity && northEast == null) {
-            particles.add(p);
+        if (objects.size() < MAX_CAPACITY && NORTH_EAST == null) {
+            objects.add(b);
             return true;
         }
 
-        if (level < maxLevel) {
-            // If at capacity and a leaf node subdivide
-            if (particles.size() == capacity && northEast == null)
-                subdivide();
+        if (level < MAX_LEVEL) {
+            if (objects.size() == MAX_CAPACITY && NORTH_EAST == null)
+                split();
 
-            if (northEast.insert(p))
+            if (NORTH_EAST.insert(b))
                 return true;
-            if (northWest.insert(p))
+            else if (NORTH_WEST.insert(b))
                 return true;
-            if (southWest.insert(p))
+            else if (SOUTH_WEST.insert(b))
                 return true;
-            if (southEast.insert(p))
+            else if (SOUTH_EAST.insert(b))
                 return true;
 
-        } else {
-            particles.add(p);
-            return true;
         }
-        return false;
+
+        objects.add(b);
+        return true;
+
     }
 
-    public void subdivide() {
+    public List retrieve(List returnObjects, BoundingBox b) {
+        return null;
+    }
 
-        // Create children of this quad tree
-        northEast = new QuadTree(boundary, Region.NORTH_EAST, level, maxLevel, capacity);
-        northWest = new QuadTree(boundary, Region.NORTH_WEST, level, maxLevel, capacity);
-        southWest = new QuadTree(boundary, Region.SOUTH_WEST, level, maxLevel, capacity);
-        southEast = new QuadTree(boundary, Region.SOUTH_EAST, level, maxLevel, capacity);
+    public void split() {
+        float subWidth = boundary.width / 2;
+        float subHeight = boundary.height / 2;
+        NORTH_EAST = new QuadTree(level + 1, new BoundingBox(boundary.x + subWidth, boundary.y, subWidth, subHeight));
+        NORTH_WEST = new QuadTree(level + 1, new BoundingBox(boundary.x, boundary.y, subWidth, subHeight));
+        SOUTH_WEST = new QuadTree(level + 1, new BoundingBox(boundary.x, boundary.y - subHeight, subWidth, subHeight));
+        SOUTH_EAST = new QuadTree(level + 1, new BoundingBox(boundary.x + subWidth, boundary.y - subHeight, subWidth, subHeight));
 
         // Bump the particles down to the children
-        for (Particle p : particles) {
-            if (northEast.insert(p))
+        for (BoundingBox b : objects) {
+            if (NORTH_EAST.insert(b))
                 continue;
-            if (northWest.insert(p))
+            if (NORTH_WEST.insert(b))
                 continue;
-            if (southWest.insert(p))
+            if (SOUTH_WEST.insert(b))
                 continue;
-            if (southEast.insert(p))
+            if (SOUTH_EAST.insert(b))
                 continue;
         }
 
         // There should be no particles in current node at this point
-        particles.clear();
+        objects.clear();
+    }
+
+    public void clear() {
+        objects.clear();
+        NORTH_EAST = NORTH_WEST = SOUTH_EAST = SOUTH_WEST = null;
+    }
+
+    @Override
+    public String toString() {
+        if (NORTH_EAST != null)
+            return String.format("ROOT = %d, NE = %d, NW = %d, SW = %d, SE = %d", objects.size(), NORTH_EAST.objects.size(), NORTH_WEST.objects.size(), SOUTH_WEST.objects.size(), SOUTH_EAST.objects.size())
+                    + String.format("\n  %s", NORTH_EAST.toString())
+                    + String.format("\n  %s", NORTH_WEST.toString())
+                    + String.format("\n  %s", SOUTH_WEST.toString())
+                    + String.format("\n  %s", SOUTH_EAST.toString());
+        //else
+        //     return String.format("(%f, %f) = %d", boundary.x, boundary.y, objects.size());
+        return "";
     }
 }

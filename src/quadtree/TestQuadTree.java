@@ -14,7 +14,6 @@ import javax.media.opengl.glu.GLU;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import quadtree.objects.Particle;
 
 /**
  *
@@ -25,11 +24,11 @@ public class TestQuadTree implements GLEventListener {
     private GLCanvas canvas;
     private GLU glu;
     private QuadTree quadTree;
-    private ArrayList<Particle> particles = new ArrayList<>();
+    private ArrayList<BoundingBox> gameObjects = new ArrayList<>();
     private final int MAX_LEVEL = 6;
-    private final int MAX_CAPACITY = 1;
-    private int numberOfParticles = 0;
-    private JLabel statusLabel = new JLabel("0");
+    private final int MAX_CAPACITY = 4;
+    private int numberOfGameObjects = 0;
+    private JLabel statusLabel = new JLabel("");
 
     @SuppressWarnings("LeakingThisInConstructor")
     public TestQuadTree() {
@@ -40,7 +39,7 @@ public class TestQuadTree implements GLEventListener {
         MouseControls mouseEventHandler;
 
         // Create the initial quad tree node
-        quadTree = new QuadTree(600, 600, MAX_LEVEL, MAX_CAPACITY);
+        quadTree = new QuadTree(0, new BoundingBox(0, 600, 600, 600));
 
         // Setup the canvas
         canvas = new GLCanvas();
@@ -63,8 +62,6 @@ public class TestQuadTree implements GLEventListener {
         frame.requestFocus();
         canvas.requestFocusInWindow();
 
-
-
         // Add keyboard and mouse listener
         canvas.addKeyListener(new KeyboardControls(this));
         mouseEventHandler = new MouseControls(this, canvas.getHeight());
@@ -74,56 +71,19 @@ public class TestQuadTree implements GLEventListener {
         // Start the animator
         animator = new Animator(canvas);
         animator.start();
+
+        quadTree.split();
     }
 
     public synchronized void reset() {
         quadTree.clear();
-        particles.clear();
-        numberOfParticles = 0;
+        gameObjects.clear();
+        numberOfGameObjects = 0;
     }
 
-    public synchronized void generateNewPoints(int x, int y, int numberOfParticles) {
-
-        quadTree = new QuadTree(600, 600, MAX_LEVEL, MAX_CAPACITY);
-
-        // Generate random points
-        float min = -10, max = 10;
-        float minVelocity = -3, maxVelocity = 3;
-        float velocityX, velocityY;
-        Particle p;
-        for (int i = 0; i < numberOfParticles; i++) {
-            velocityX = minVelocity + ((float) Math.random() * ((maxVelocity - minVelocity) + 1));
-            velocityY = minVelocity + ((float) Math.random() * ((maxVelocity - minVelocity) + 1));
-            p = new Particle(x, y, velocityX, velocityY, 600, 600);
-            quadTree.insert(p);
-            particles.add(p);
-        }
-
-        this.numberOfParticles += numberOfParticles;
-    }
-
-    public synchronized void generateNewPoints(int numberOfParticles) {
-
-        quadTree = new QuadTree(600, 600, MAX_LEVEL, MAX_CAPACITY);
-
-        // Generate random points
-        particles.clear();
-        float min = 0, max = 600;
-        float minVelocity = -3, maxVelocity = 3;
-        float x, y;
-        float velocityX, velocityY;
-        Particle p;
-        for (int i = 0; i < numberOfParticles; i++) {
-            x = min + ((float) Math.random() * ((max - min) + 1));
-            y = min + ((float) Math.random() * ((max - min) + 1));
-            velocityX = minVelocity + ((float) Math.random() * ((maxVelocity - minVelocity) + 1));
-            velocityY = minVelocity + ((float) Math.random() * ((maxVelocity - minVelocity) + 1));
-            p = new Particle(x, y, velocityX, velocityY, 600, 600);
-            quadTree.insert(p);
-            particles.add(p);
-        }
-
-        this.numberOfParticles = numberOfParticles;
+    public void insertGameObject(BoundingBox b) {
+        gameObjects.add(b);
+        numberOfGameObjects++;
     }
 
     @Override
@@ -133,20 +93,18 @@ public class TestQuadTree implements GLEventListener {
         gl.glLoadIdentity();
         glu.gluLookAt(0, 0, 1, 0, 0, 0, 0f, 1f, 0f);
 
-        // Draw everything here
         quadTree.clear();
-        for (Particle p : particles) {
-            quadTree.insert(p);             // Insert the particle into the tree
-            p.move();                       // Move the particle
-            quadTree.checkForCollisions();
-            p.draw(gl);                     // Draw the particle
-            p.resetColor();
+        for (BoundingBox b : gameObjects) {
+            quadTree.insert(b);
+            b.draw(gl);
         }
 
         quadTree.draw(gl);
 
+        System.out.println(quadTree);
+
         // Update fps label
-        statusLabel.setText(String.format("Number of particles: %d | FPS: %.2f", numberOfParticles, drawable.getAnimator().getLastFPS()));
+        statusLabel.setText(String.format("Number of particles: %d | FPS: %.2f", numberOfGameObjects, drawable.getAnimator().getLastFPS()));
 
         // Check for errors
         int error = gl.glGetError();
@@ -168,7 +126,7 @@ public class TestQuadTree implements GLEventListener {
         gl.glHint(GL2.GL_PERSPECTIVE_CORRECTION_HINT, GL2.GL_NICEST);
         glu = new GLU();
 
-        drawable.getAnimator().setUpdateFPSFrames(3, null);
+        drawable.getAnimator().setUpdateFPSFrames(50, null);
     }
 
     @Override
@@ -176,8 +134,8 @@ public class TestQuadTree implements GLEventListener {
         GL2 gl = drawable.getGL().getGL2();
         gl.glMatrixMode(GL2.GL_PROJECTION);
         gl.glLoadIdentity();
-        width = height = Math.min(width, height); 	//this avoids different x,y scaling
-        gl.glViewport(0, 0, width, height);
+        //width = height = Math.min(width, height); 	//this avoids different x,y scaling
+        //gl.glViewport(0, 0, width, height);
         gl.glOrtho(-1, 601, -1, 601, -1, 601);
         gl.glMatrixMode(GL2.GL_MODELVIEW);
         gl.glLoadIdentity();

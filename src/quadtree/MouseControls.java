@@ -1,11 +1,9 @@
 package quadtree;
 
-import java.awt.MouseInfo;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.awt.geom.Rectangle2D;
 
 /**
  *
@@ -23,7 +21,6 @@ public class MouseControls implements MouseListener, MouseMotionListener {
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        controller.generateNewPoints(e.getX(), height - e.getY(), 5);
     }
 
     @Override
@@ -36,7 +33,7 @@ public class MouseControls implements MouseListener, MouseMotionListener {
 
     @Override
     public void mousePressed(MouseEvent e) {
-        controller.generateNewPoints(e.getX(), height - e.getY(), 10);
+        controller.insertGameObject(new BoundingBox(e.getX(), height - e.getY(), 10, 10));
     }
 
     @Override

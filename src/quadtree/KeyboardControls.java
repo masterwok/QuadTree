@@ -27,7 +27,7 @@ public class KeyboardControls implements KeyListener {
     public void keyReleased(java.awt.event.KeyEvent e) {
         switch (e.getKeyCode()) {
             case (KeyEvent.VK_SPACE):
-                controller.generateNewPoints(25);
+                //controller.generateNewPoints(5);
                 break;
             case (KeyEvent.VK_C):
                 controller.reset();

@@ -1,61 +1,43 @@
 package quadtree;
 
-import javax.media.opengl.GL;
+import java.awt.geom.Rectangle2D;
 import javax.media.opengl.GL2;
-import quadtree.objects.Particle;
 
 /**
  *
- * @author Jonathan Trowbridge
+ * @author jtsan
  */
-public class BoundingBox {
-
-    private float x;
-    private float y;
-    private float width;
-    private float height;
+public class BoundingBox extends Rectangle2D.Float {
 
     public BoundingBox(float x, float y, float width, float height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
+        super(x, y, width, height);
+    }
+
+    @Override
+    public boolean contains(double x, double y, double width, double height) { 
+        return containsPoint(x, y - height)
+                && containsPoint(x, y)
+                && containsPoint(x + width, y)
+                && containsPoint(x + width, y - height);
+    }
+
+    private boolean containsPoint(double x, double y) {
+        return (x >= this.x && x <= this.x + this.width) && (y >= this.y - this.height && y <= this.y);
     }
 
     public void draw(GL2 gl) {
         gl.glPushMatrix();
-        gl.glColor3f(0f, 1f, 1f);                   // Cyan
-        gl.glBegin(GL.GL_LINE_LOOP);
-        gl.glVertex3f(x, y - height, 0f);           // Bottom left
-        gl.glVertex3f(x, y, 0f);                    // Top left
-        gl.glVertex3f(x + width, y, 0f);            // Top right
-        gl.glVertex3f(x + width, y - height, 0f);   // Bottom right
+        gl.glBegin(GL2.GL_LINE_LOOP);
+        gl.glVertex3f(x, y - height, 0f);
+        gl.glVertex3f(x, y, 0f);
+        gl.glVertex3f(x + width, y, 0f);
+        gl.glVertex3f(x + width, y - height, 0f);
         gl.glEnd();
         gl.glPopMatrix();
     }
 
-    public boolean contains(Particle p) {
-        return (p.getX() >= x && p.getX() <= x + width) && (p.getY() >= y - height && p.getY() <= y);
-    }
-
     @Override
     public String toString() {
-        return String.format("Top Left: (%f, %f) Width: %f Height: %f", x, y, width, height);
-    }
-
-    public float getX() {
-        return x;
-    }
-
-    public float getY() {
-        return y;
-    }
-
-    public float getWidth() {
-        return width;
-    }
-
-    public float getHeight() {
-        return height;
+        return String.format("[x = %f, y = %f, width = %f, height = %f", x, y, width, height);
     }
 }
